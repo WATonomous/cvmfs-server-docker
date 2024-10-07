@@ -22,7 +22,13 @@ services:
       # https://cernvm-forum.cern.ch/t/overlayfs-on-top-of-cephfs/120/4
       - /var/spool/cvmfs
     
-    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    devices:
+      - /dev/fuse
+
     hostname: cvmfs-server.example.local
 
   # Dummy S3 server for testing. References:
