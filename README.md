@@ -113,6 +113,83 @@ EOF
 /usr/bin/mount_cvmfs.sh
 ```
 
+## Quirks
+
+On a fresh start of dockerd, the `cvmfs_server mkfs` command seems to complete properly:
+
+```
+> docker compose down cvmfs-server --remove-orphans; docker compose run --service-ports cvmfs-server
+root@cvmfs-server:/# mkdir /srv/cvmfs
+ln -s /srv/cvmfs /var/www/cvmfs
+a2enmod headers expires proxy proxy_http
+service apache2 start
+cvmfs_server mkfs cvmfs-server.example.local
+
+Enabling module headers.
+Enabling module expires.
+Enabling module proxy.
+Considering dependency proxy for proxy_http:
+Module proxy already enabled
+Enabling module proxy_http.
+To activate the new configuration, you need to run:
+  service apache2 restart
+ * Starting Apache httpd web server apache2                                                                                                                                                                                                                      * 
+Owner of cvmfs-server.example.local [root]: 
+Creating Configuration Files... done
+Creating CernVM-FS Master Key and Self-Signed Certificate... done
+Creating CernVM-FS Server Infrastructure... done
+Creating Backend Storage... done
+Signing 30 day whitelist with master key... done
+Creating Initial Repository... done
+Mounting CernVM-FS Storage... (overlayfs) done
+Allowing Replication of this Repository... done
+Initial commit... New CernVM-FS repository for cvmfs-server.example.local
+Updating global JSON information... done
+
+Before you can install anything, call `cvmfs_server transaction`
+to enable write access on your repository. Then install your
+software in /cvmfs/cvmfs-server.example.local as user root.
+Once you're happy, publish using `cvmfs_server publish`
+
+For client configuration, have a look at 'cvmfs_server info'
+
+If you go for production, backup your masterkey from /etc/cvmfs/keys/!
+root@cvmfs-server:/# echo $?
+0
+```
+
+However, on a subsequent run (even after `docker system prune -a`), the `cvmfs_server mkfs` command exits with error. But everything seems to be working fine:
+
+```
+root@cvmfs-server:/# mkdir /srv/cvmfs
+ln -s /srv/cvmfs /var/www/cvmfs
+a2enmod headers expires proxy proxy_http
+service apache2 start
+cvmfs_server mkfs cvmfs-server.example.local
+Enabling module headers.
+Enabling module expires.
+Enabling module proxy.
+Considering dependency proxy for proxy_http:
+Module proxy already enabled
+Enabling module proxy_http.
+To activate the new configuration, you need to run:
+  service apache2 restart
+ * Starting Apache httpd web server apache2                                                                                                                                                                                                                      * 
+Owner of cvmfs-server.example.local [root]: 
+Creating Configuration Files... done
+Creating CernVM-FS Master Key and Self-Signed Certificate... done
+Creating CernVM-FS Server Infrastructure... done
+Creating Backend Storage... done
+Signing 30 day whitelist with master key... done
+Creating Initial Repository... done
+Mounting CernVM-FS Storage... (overlayfs) done
+Allowing Replication of this Repository... done
+cvmfs-server.example.local is not based on the newest published revision
+fail! (health check after mount)
+```
+
+EDIT: this is due to `/tmp/cvmfs-spool` not cleaned up. Simply removing the directory fixes the issue.
+
 ## TODO
 
 - [ ] Figure out how to access the repo as a client
@@ -129,3 +206,4 @@ EOF
 
 - [Creating a Repository (Stratum 0)](https://cvmfs.readthedocs.io/en/stable/cpt-repo.html)
 - [Stratum 0 and client tutorial](https://cvmfs-contrib.github.io/cvmfs-tutorial-2021/02_stratum0_client/)
+- [Server Spool Area of a Repository (Stratum0)](https://cvmfs.readthedocs.io/en/stable/apx-serverinfra.html#server-spool-area-of-a-repository-stratum0)
