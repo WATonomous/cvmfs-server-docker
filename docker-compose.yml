@@ -44,8 +44,8 @@ services:
       - CVMFS_CLIENT_PROFILE=single
       - CVMFS_QUOTA_LIMIT=15360
       # - CVMFS_REPOSITORIES=cvmfs.cluster.watonomous.ca
-      - CVMFS_REPOSITORIES=unpacked.cern.ch,cvmfs-server.example.local
-      # - CVMFS_SERVER_URL=http://minio:9000/cvmfs/cvmfs-server.example.local
+      # - CVMFS_REPOSITORIES=unpacked.cern.ch,cvmfs-server.example.local
+      - CVMFS_REPOSITORIES=cvmfs-server.example.local
       # - CVMFS_REPOSITORIES=unpacked.cern.ch
 
 
