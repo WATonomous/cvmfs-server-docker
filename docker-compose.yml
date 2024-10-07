@@ -3,6 +3,12 @@ services:
     build:
       context: .
     
+    ports:
+      - "8080:80"
+    
+    # environment:
+    #   - CVMFS_SERVER_DEBUG=1
+    
     volumes:
       - .:/workspace
       # Required. Otherwise will get the following error:
@@ -11,6 +17,7 @@ services:
       - /tmp/cvmfs-spool:/var/spool/cvmfs
     
     privileged: true
+    hostname: cvmfs-server.example.local
 
   # Dummy S3 server for testing. References:
   # - https://github.com/minio/minio/blob/1bc6681176257bdd7a831b053a448412a3589a3c/docs/docker/README.md
@@ -22,9 +29,29 @@ services:
       - "9000:9000"
       - "9001:9001"
 
-    entrypoint: sh
-    command: -c 'mkdir -p /data/cvmfs && /usr/bin/minio server /data --console-address ":9001"'
+    # entrypoint: sh
+    # command: -c 'mkdir -p /data/cvmfs && /usr/bin/minio server /data --console-address ":9001"'
+    command: server /data --console-address ":9001"
 
     environment:
       - MINIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE
       - MINIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  
+  cvmfs-client:
+    image: registry.cern.ch/cvmfs/service:2.11.2-1
+
+    environment:
+      - CVMFS_CLIENT_PROFILE=single
+      - CVMFS_QUOTA_LIMIT=15360
+      # - CVMFS_REPOSITORIES=cvmfs.cluster.watonomous.ca
+      - CVMFS_REPOSITORIES=unpacked.cern.ch,cvmfs-server.example.local
+      # - CVMFS_SERVER_URL=http://minio:9000/cvmfs/cvmfs-server.example.local
+      # - CVMFS_REPOSITORIES=unpacked.cern.ch
+
+
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    devices:
+      - /dev/fuse

@@ -1,0 +1,13 @@
+# This file contains the configuration for s3cmd.
+[default]
+# The keys are generated for the github_actions user in the Ceph provisioner
+access_key = AKIAIOSFODNN7EXAMPLE
+secret_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# We use the Kubernetes internal DNS name for the RGW service
+# to maximize throughput and minimize latency.
+host_base = minio:9000
+host_bucket = minio:9000/%(bucket)
+public_url_use_https = False
+signurl_use_https = False
+use_https = False
