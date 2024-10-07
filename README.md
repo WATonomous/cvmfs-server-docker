@@ -2,6 +2,9 @@
 
 A Dockerized CVMFS stratum 0 server with a MinIO backend.
 
+> [!NOTE]
+> This is a work in progress and should not be used in production. The roadmap is outlined in the [TODO](#TODO) section.
+
 ## Getting started
 
 Initialize the CVMFS repository:
