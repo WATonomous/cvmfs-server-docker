@@ -31,6 +31,10 @@ ln -s /srv/cvmfs /var/www/cvmfs
 a2enmod headers expires proxy proxy_http
 service apache2 start
 cvmfs_server mkfs cvmfs-server.example.local
+
+# make the public key available for clients
+mkdir /var/www/html/cvmfs-meta
+cp /etc/cvmfs/keys/cvmfs-server.example.local.pub /var/www/html/cvmfs-meta
 ```
 
 Make changes to the CVMFS repository:
@@ -74,26 +78,13 @@ cvmfs_swissknife graft -i /cvmfs/cvmfs-server.example.local/test5 -c 2048
 ```bash
 docker compose down cvmfs-client --remove-orphans; docker compose run --entrypoint sh cvmfs-client
 
-# This is required. Otherwise we get "CernVM-FS: loading Fuse module... Failed to initialize root file catalog (16 - file catalog failure)"
-# This is obtained from the host.
-cat <<EOF > /etc/cvmfs/keys/cvmfs-server.example.local.pub 
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2UcOiQM3HGdxD1GE62l6
-7tgeD5ZbME4o+7zsGknzuMU/QABw/huRi/gk9yUmhSoMQytU+DJbs++6/KfWHK/W
-TclMAbHZpPjPD9z7IVDWy6lLZ0SWXJq61ImA7VHjWg0fjtAygjGMGrA48B+YbS55
-lckghsZkRR5/Vg4tFGJqbr18HpY7qqh7PaCYKUlkflRPYokZuqPTmhqNHUfsGqNM
-y8dOSeIqe75xXDmBAHG3XJydHBJK/1wh1mARJlMJkDu/uQ5qynv5N5+piiI0jLC7
-S10ZtRodlI5DGnolRzTTv5fy7oXk+CUif8cQ7IkIB0KnuJw8gCJeyvwZJ+mKRGVf
-gwIDAQAB
------END PUBLIC KEY-----
-EOF
-
-
 # apache2
+# The public key is required. Otherwise we get "CernVM-FS: loading Fuse module... Failed to initialize root file catalog (16 - file catalog failure)"
+wget cvmfs-server.example.local/cvmfs-meta/cvmfs-server.example.local.pub -O /etc/cvmfs/keys/cvmfs-server.example.local.pub
 cat <<EOF > /etc/cvmfs/config.d/cvmfs-server.example.local.conf
 # For some reason we can't use @fprn@ here. The client doesn't appear to do the substitution.
 CVMFS_SERVER_URL=http://cvmfs-server.example.local/cvmfs/cvmfs-server.example.local
-CVMFS_KEYS_DIR="/etc/cvmfs/keys"
+CVMFS_KEYS_DIR=/etc/cvmfs/keys/
 # Makes the client check for updates more frequently. In minutes.
 CVMFS_MAX_TTL=1
 # Required. Otherwise we get "failed to discover HTTP proxy servers (23 - proxy auto-discovery failed)" on our custom cvmfs-server.
@@ -103,7 +94,7 @@ EOF
 # s3
 cat <<EOF > /etc/cvmfs/config.d/cvmfs-server.example.local.conf
 CVMFS_SERVER_URL=http://minio:9000/cvmfs/@fprn@
-CVMFS_KEYS_DIR="/etc/cvmfs/keys"
+CVMFS_KEYS_DIR=/etc/cvmfs/keys/
 # Makes the client check for updates more frequently. In minutes.
 CVMFS_MAX_TTL=1
 # Required. Otherwise we get "failed to discover HTTP proxy servers (23 - proxy auto-discovery failed)" on our custom cvmfs-server.
@@ -112,6 +103,30 @@ EOF
 
 /usr/bin/mount_cvmfs.sh
 ```
+
+## Offline mode and recovery
+
+When the cvmfs server goes down, the client will atomatically switch to offline mode and continue to serve files from the cache.
+With `CVMFS_MAX_TTL=1` it appears that the client will notice the server going down within a minute and notice the server coming back up in around 3 minutes.
+I'm currently not sure which parameter determines how often the client checks for the server being back up.
+
+`/var/log/cvmfs.log` with comments:
+
+```
+# server going down at "Mon Oct  7 18:57:44 UTC 2024"
+
+Mon Oct  7 18:58:29 2024 (cvmfs-server.example.local) failed to download repository manifest (4 - failed to resolve host address)
+Mon Oct  7 18:58:29 2024 (cvmfs-server.example.local) warning, could not apply updated catalog revision, entering offline mode
+
+# server coming back up at "Mon Oct  7 18:58:59 UTC 2024"
+
+Mon Oct  7 19:01:29 2024 (cvmfs-server.example.local) recovered from offline mode
+Mon Oct  7 19:01:34 2024 (cvmfs-server.example.local) switched to catalog revision 1
+```
+
+Relevant documentation can be found at:
+- https://cvmfs.readthedocs.io/en/stable/cpt-configure.html
+
 
 ## Quirks
 

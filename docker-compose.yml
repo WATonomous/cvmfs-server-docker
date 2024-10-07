@@ -11,6 +11,8 @@ services:
     
     volumes:
       - .:/workspace
+      # Persist the keys so that the client doesn't need to be reconfigured
+      - ./cvmfs-keys:/etc/cvmfs/keys/
     
     tmpfs:
       # testing ephemeral data directory
@@ -51,8 +53,7 @@ services:
       # - CVMFS_REPOSITORIES=unpacked.cern.ch,cvmfs-server.example.local
       - CVMFS_REPOSITORIES=cvmfs-server.example.local
       # - CVMFS_REPOSITORIES=unpacked.cern.ch
-
-
+    
     cap_add:
       - SYS_ADMIN
     security_opt:
