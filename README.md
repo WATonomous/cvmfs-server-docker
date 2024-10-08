@@ -108,7 +108,7 @@ EOF
 
 When the cvmfs server goes down, the client will atomatically switch to offline mode and continue to serve files from the cache.
 With `CVMFS_MAX_TTL=1` it appears that the client will notice the server going down within a minute and notice the server coming back up in around 3 minutes.
-I'm currently not sure which parameter determines how often the client checks for the server being back up.
+I'm currently not sure which parameter determines how often the client checks for the server being back up. Perhaps it's set by [`kShortTermTTL`](https://github.com/cvmfs/cvmfs/blob/669309e4bb84894acfb23c316ab6b7a07c4a34bc/cvmfs/mountpoint.h#L486)?
 
 `/var/log/cvmfs.log` with comments:
 
